@@ -12,6 +12,8 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.client.RestClient;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Spring configuration class responsible for creating and configuring
  * infrastructure components used by the site monitoring subsystem.
@@ -43,6 +45,7 @@ import org.springframework.web.client.RestClient;
  * cannot negatively impact web request performance.
  * </p>
  */
+@Slf4j
 @Configuration
 public class SiteMonitorConfiguration {
 

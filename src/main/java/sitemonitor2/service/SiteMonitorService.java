@@ -16,8 +16,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -26,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 
+import lombok.extern.slf4j.Slf4j;
 import sitemonitor2.jdbc.Site;
 import sitemonitor2.jdbc.SiteRepository;
 
@@ -73,10 +72,9 @@ import sitemonitor2.jdbc.SiteRepository;
  * execution is skipped.
  * </p>
  */
+@Slf4j
 @Service
 public class SiteMonitorService {
-
-	private static final Logger log = LoggerFactory.getLogger(SiteMonitorService.class);
 
 	private static final String STATUS_OK = "OK";
 	private static final String STATUS_FAIL = "FAIL";
@@ -89,6 +87,7 @@ public class SiteMonitorService {
 	private final SiteRepository siteRepository;
 	private final RestClient siteMonitorRestClient;
 	private final Executor siteMonitorExecutor;
+	private final EmailNotificationService emailNotificationService;
 
 	/*
 	 * Prevents a new monitoring cycle from starting while the prior cycle is still
@@ -110,11 +109,13 @@ public class SiteMonitorService {
 	 *     Dedicated executor used to perform concurrent site checks.
 	 */	
 	public SiteMonitorService(SiteRepository siteRepository, RestClient siteMonitorRestClient,
-			@Qualifier("siteMonitorExecutor") Executor siteMonitorExecutor) {
+			@Qualifier("siteMonitorExecutor") Executor siteMonitorExecutor, 
+			EmailNotificationService emailNotificationService) {
 
 		this.siteRepository = siteRepository;
 		this.siteMonitorRestClient = siteMonitorRestClient;
 		this.siteMonitorExecutor = siteMonitorExecutor;
+		this.emailNotificationService = emailNotificationService;
 	}
 
 	/**
@@ -330,8 +331,7 @@ public class SiteMonitorService {
 				String eventChange = determineEventChange(previousStatus, currentStatus);
 
 				log.info(
-						"Site check completed: id={}, " + "name={}, status={}, " + "responseTime={} ms, "
-								+ "eventChange={}",
+						"Site check completed: id={}, name={}, status={}, responseTime={} ms, eventChange={}",
 						site.getId(), site.getName(), currentStatus, responseTime, eventChange);
 
 				return new SiteCheckResult(site.getId(), currentStatus, responseTime, failures, eventDescription,
@@ -563,6 +563,11 @@ public class SiteMonitorService {
 			}
 
 			applyResult(site, result);
+			
+			if (EVENT_CHANGE_YES.equals(result.eventChange())) {
+				emailNotificationService.sendStatusChangeNotification(site, result);
+			}
+			
 			updatedSites.add(site);
 		}
 
@@ -607,4 +612,5 @@ public class SiteMonitorService {
 
 		return value.substring(0, MAX_EVENT_DESCRIPTION_LENGTH);
 	}
+
 }

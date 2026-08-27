@@ -8,9 +8,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import lombok.extern.slf4j.Slf4j;
 import sitemonitor2.jdbc.Site;
 import sitemonitor2.jdbc.SiteRepository;
 
+@Slf4j
 @Controller
 @RequestMapping("/sites")
 public class SiteController {

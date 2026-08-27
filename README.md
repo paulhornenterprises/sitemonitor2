@@ -256,8 +256,13 @@ gradlew clean build
 
 ## Run
 
+You must set the System property for the mail host on the JVM during startup or uncomment and set in the applications.properties.
+ 
+-Dspring.mail.host=smtp.somehost.com
+-Dspring.mail.from=someone@test.net
+
 ```bash
-gradlew bootRun
+gradlew bootRun -Dspring.mail.host=smtp.somehost.com -Dspring.mail.from=someone@test.net
 ```
 
 ## Open Application
