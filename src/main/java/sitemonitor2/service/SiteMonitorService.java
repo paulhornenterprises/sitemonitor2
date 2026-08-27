@@ -29,6 +29,50 @@ import org.springframework.web.client.RestClient;
 import sitemonitor2.jdbc.Site;
 import sitemonitor2.jdbc.SiteRepository;
 
+/**
+ * Scheduled monitoring service responsible for validating the health and
+ * content of all enabled sites configured within the Site Monitor
+ * application.
+ *
+ * <p>
+ * The monitoring process executes on a fixed schedule and performs
+ * concurrent HTTP requests against every enabled monitored site.
+ * Validation consists of:
+ * </p>
+ *
+ * <ol>
+ *   <li>Making an HTTP GET request to the configured URL.</li>
+ *   <li>Confirming the HTTP status code is successful (2xx).</li>
+ *   <li>Confirming the configured assertion text exists within the
+ *       response body.</li>
+ * </ol>
+ *
+ * <p>
+ * Monitoring results are persisted back to the Site table and update:
+ * </p>
+ *
+ * <ul>
+ *   <li>Status (OK / FAIL)</li>
+ *   <li>Response time</li>
+ *   <li>Failure count</li>
+ *   <li>Event timestamp</li>
+ *   <li>Event description</li>
+ *   <li>Event change indicator</li>
+ *   <li>Last checked timestamp</li>
+ * </ul>
+ *
+ * <p>
+ * Site checks are executed concurrently using a dedicated monitoring
+ * executor to maximize throughput while preventing monitoring activity
+ * from impacting application request processing threads.
+ * </p>
+ *
+ * <p>
+ * Only one monitoring cycle may run at a time. If a scheduled execution
+ * occurs while a previous cycle is still in progress, the subsequent
+ * execution is skipped.
+ * </p>
+ */
 @Service
 public class SiteMonitorService {
 
@@ -52,6 +96,19 @@ public class SiteMonitorService {
 	 */
 	private final AtomicBoolean monitoringCycleRunning = new AtomicBoolean(false);
 
+	/**
+	 * Creates a new monitoring service.
+	 *
+	 * @param siteRepository
+	 *     Repository used to retrieve and persist monitor configuration and
+	 *     site health information.
+	 *
+	 * @param siteMonitorRestClient
+	 *     Shared HTTP client used for outbound monitoring requests.
+	 *
+	 * @param siteMonitorExecutor
+	 *     Dedicated executor used to perform concurrent site checks.
+	 */	
 	public SiteMonitorService(SiteRepository siteRepository, RestClient siteMonitorRestClient,
 			@Qualifier("siteMonitorExecutor") Executor siteMonitorExecutor) {
 
@@ -60,6 +117,32 @@ public class SiteMonitorService {
 		this.siteMonitorExecutor = siteMonitorExecutor;
 	}
 
+	/**
+	 * Executes a complete monitoring cycle.
+	 *
+	 * <p>
+	 * This method is invoked automatically by Spring Scheduling according to
+	 * the configured monitoring interval.
+	 * </p>
+	 *
+	 * <p>
+	 * Processing flow:
+	 * </p>
+	 *
+	 * <ol>
+	 *   <li>Prevents overlapping monitoring cycles.</li>
+	 *   <li>Loads all enabled sites.</li>
+	 *   <li>Submits monitoring tasks to the monitoring executor.</li>
+	 *   <li>Waits for all monitoring tasks to complete.</li>
+	 *   <li>Updates site status information.</li>
+	 *   <li>Persists monitoring results.</li>
+	 * </ol>
+	 *
+	 * <p>
+	 * Any individual site failure does not stop the remainder of the
+	 * monitoring cycle.
+	 * </p>
+	 */	
 	@Scheduled(fixedRateString = "${site-monitor.interval-ms:60000}", initialDelayString = "${site-monitor.initial-delay-ms:5000}")
 	public void monitorSites() {
 
@@ -103,6 +186,13 @@ public class SiteMonitorService {
 		}
 	}
 
+	/**
+	 * Retrieves all enabled sites that should participate in the current
+	 * monitoring cycle.
+	 *
+	 * @return
+	 *     List of enabled sites.
+	 */	
 	private List<Site> getEnabledSites() {
 
 		List<Site> sites = new ArrayList<>();
@@ -112,17 +202,56 @@ public class SiteMonitorService {
 		return sites;
 	}
 
+	/**
+	 * Submits monitoring tasks for every site using the configured monitoring
+	 * executor.
+	 *
+	 * <p>
+	 * Each site is checked independently and asynchronously using
+	 * {@link CompletableFuture}.
+	 * </p>
+	 *
+	 * @param sites
+	 *     Sites to be monitored.
+	 *
+	 * @return
+	 *     List of futures representing each monitoring operation.
+	 */	
 	private List<CompletableFuture<SiteCheckResult>> submitSiteChecks(List<Site> sites) {
 
 		return sites.stream().map(site -> CompletableFuture.supplyAsync(() -> checkSite(site), siteMonitorExecutor))
 				.toList();
 	}
 
+	/**
+	 * Collects completed monitoring results while filtering failed
+	 * futures that could not produce a valid monitoring result.
+	 *
+	 * @param futures
+	 *     Completed monitoring futures.
+	 *
+	 * @return
+	 *     Successfully completed monitoring results.
+	 */	
 	private List<SiteCheckResult> collectResults(List<CompletableFuture<SiteCheckResult>> futures) {
 
 		return futures.stream().map(this::getCompletedResult).filter(Objects::nonNull).toList();
 	}
 
+	/**
+	 * Extracts a monitoring result from a completed future.
+	 *
+	 * <p>
+	 * Any asynchronous execution exceptions are logged and converted into
+	 * a null result.
+	 * </p>
+	 *
+	 * @param future
+	 *     Monitoring future.
+	 *
+	 * @return
+	 *     Completed monitoring result or null when retrieval fails.
+	 */	
 	private SiteCheckResult getCompletedResult(CompletableFuture<SiteCheckResult> future) {
 
 		try {
@@ -135,6 +264,39 @@ public class SiteMonitorService {
 		}
 	}
 
+	/**
+	 * Performs a health check against a single monitored site.
+	 *
+	 * <p>
+	 * A site is considered healthy when:
+	 * </p>
+	 *
+	 * <ul>
+	 *   <li>The HTTP response status is 2xx.</li>
+	 *   <li>The configured assertion text is present within the response
+	 *       body.</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * The resulting status will be:
+	 * </p>
+	 *
+	 * <ul>
+	 *   <li>OK - validation successful</li>
+	 *   <li>FAIL - validation unsuccessful</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * Response timing metrics, event details, and change detection
+	 * information are also collected.
+	 * </p>
+	 *
+	 * @param site
+	 *     Site being monitored.
+	 *
+	 * @return
+	 *     Monitoring outcome for the site.
+	 */	
 	private SiteCheckResult checkSite(Site site) {
 
 		String previousStatus = normalizeStatus(site.getStatus());
@@ -181,6 +343,36 @@ public class SiteMonitorService {
 		}
 	}
 
+	/**
+	 * Creates a monitoring result representing a technical failure during
+	 * monitoring execution.
+	 *
+	 * <p>
+	 * Examples include:
+	 * </p>
+	 *
+	 * <ul>
+	 *   <li>DNS resolution failures</li>
+	 *   <li>Connection timeouts</li>
+	 *   <li>TLS handshake failures</li>
+	 *   <li>Connection refused errors</li>
+	 * </ul>
+	 *
+	 * @param site
+	 *     Site being monitored.
+	 *
+	 * @param previousStatus
+	 *     Site status before the failed check.
+	 *
+	 * @param requestStarted
+	 *     Request start time used for response-time calculation.
+	 *
+	 * @param exception
+	 *     Failure encountered during monitoring.
+	 *
+	 * @return
+	 *     Failure monitoring result.
+	 */	
 	private SiteCheckResult createFailureResult(Site site, String previousStatus, Instant requestStarted,
 			Exception exception) {
 
@@ -200,6 +392,24 @@ public class SiteMonitorService {
 				truncate(exceptionMessage), eventTime, eventChange);
 	}
 
+	/**
+	 * Validates whether the response body contains the configured assertion
+	 * text.
+	 *
+	 * <p>
+	 * When no assertion text is configured, the response is automatically
+	 * considered valid.
+	 * </p>
+	 *
+	 * @param responseBody
+	 *     HTTP response body.
+	 *
+	 * @param assertText
+	 *     Expected text fragment.
+	 *
+	 * @return
+	 *     True if validation succeeds.
+	 */	
 	private boolean responseContainsAssertText(String responseBody, String assertText) {
 
 		/*
@@ -213,6 +423,24 @@ public class SiteMonitorService {
 		return responseBody != null && responseBody.contains(assertText);
 	}
 
+	/**
+	 * Calculates the next failure count value based on the monitoring
+	 * outcome.
+	 *
+	 * <p>
+	 * Failure counts increase when a site remains in FAIL status and are
+	 * reset when the site returns to an OK state.
+	 * </p>
+	 *
+	 * @param site
+	 *     Current site state.
+	 *
+	 * @param currentStatus
+	 *     Newly calculated status.
+	 *
+	 * @return
+	 *     Updated failure count.
+	 */	
 	private long calculateFailureCount(Site site, String currentStatus) {
 
 		if (STATUS_FAIL.equals(currentStatus)) {
@@ -222,6 +450,23 @@ public class SiteMonitorService {
 		return 0;
 	}
 
+	/**
+	 * Creates a human-readable event description suitable for dashboard
+	 * display and alerting.
+	 *
+	 * <p>
+	 * Event descriptions contain:
+	 * </p>
+	 *
+	 * <ul>
+	 *   <li>HTTP response code</li>
+	 *   <li>Assertion failures</li>
+	 *   <li>Response header information</li>
+	 * </ul>
+	 *
+	 * @return
+	 *     Event description text.
+	 */	
 	private String createEventDescription(HttpStatusCode httpStatus, HttpHeaders responseHeaders,
 			boolean assertTextFound, String assertText) {
 
@@ -238,6 +483,32 @@ public class SiteMonitorService {
 		return truncate(description.toString());
 	}
 
+	/**
+	 * Determines whether the current monitoring cycle resulted in a status
+	 * transition.
+	 *
+	 * <p>
+	 * Event changes occur only when:
+	 * </p>
+	 *
+	 * <ul>
+	 *   <li>OK → FAIL</li>
+	 *   <li>FAIL → OK</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * First-time monitoring results do not generate an event change.
+	 * </p>
+	 *
+	 * @param previousStatus
+	 *     Previous site status.
+	 *
+	 * @param currentStatus
+	 *     Newly calculated site status.
+	 *
+	 * @return
+	 *     YES if a state transition occurred; otherwise NO.
+	 */	
 	private String determineEventChange(String previousStatus, String currentStatus) {
 
 		boolean previousStatusCanBeCompared = STATUS_OK.equals(previousStatus) || STATUS_FAIL.equals(previousStatus);
@@ -258,6 +529,21 @@ public class SiteMonitorService {
 		return status.trim().toUpperCase(Locale.ROOT);
 	}
 
+	/**
+	 * Applies monitoring results to site entities and persists the updated
+	 * values to the database.
+	 *
+	 * <p>
+	 * Site lookups are performed using an in-memory map to avoid repeated
+	 * linear scans when processing large numbers of monitored sites.
+	 * </p>
+	 *
+	 * @param sites
+	 *     Sites loaded at the beginning of the monitoring cycle.
+	 *
+	 * @param results
+	 *     Completed monitoring results.
+	 */	
 	private void applyAndSaveResults(List<Site> sites, List<SiteCheckResult> results) {
 
 		if (results.isEmpty()) {
@@ -283,6 +569,15 @@ public class SiteMonitorService {
 		siteRepository.saveAll(updatedSites);
 	}
 
+	/**
+	 * Copies monitoring result values to a Site entity prior to persistence.
+	 *
+	 * @param site
+	 *     Site entity being updated.
+	 *
+	 * @param result
+	 *     Monitoring result to apply.
+	 */	
 	private void applyResult(Site site, SiteCheckResult result) {
 
 		site.setStatus(result.status());
@@ -294,6 +589,15 @@ public class SiteMonitorService {
 		site.setLastChecked(result.eventTime());
 	}
 
+	/*** * Ensures event descriptions fit within the configured database column
+	 * length.
+	 *
+	 * @param value
+	 *    Text to be truncated.
+	 *
+	 * @return
+	 *     Original or truncated text depending on length.
+	 */	
 	private String truncate(String value) {
 
 		if (value == null || value.length() <= MAX_EVENT_DESCRIPTION_LENGTH) {
