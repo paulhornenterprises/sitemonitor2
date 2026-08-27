@@ -25,7 +25,7 @@ public class SiteController {
 
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("sites", repository.findAll());
+        model.addAttribute("sites", repository.findAllByOrderByNameAsc());
         return "sites/list";
     }
 

@@ -19,5 +19,5 @@ CREATE TABLE IF NOT EXISTS site (
     event_change VARCHAR(30) DEFAULT 'NO'
 );
 
--- INSERT INTO site (name,url,status,assert_text,notify) VALUES ('Site Monitor 2 (localhost)','http://localhost:8080/actuator/health','OK','UP','alerts@test.net');
+-- INSERT INTO site (name,url,status,assert_text,notify) VALUES ('Site Monitor 2 (localhost)','http://localhost:8012/sm2/actuator/health','OK','UP','alerts@test.net');
 -- COMMIT;

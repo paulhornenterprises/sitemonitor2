@@ -55,5 +55,33 @@
     </style>
 	<th:block th:replace="${additionalCss}" />
 </head>
+<body>
+	<nav th:fragment="commonNav" class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+	  <div class="container">
+	    <a class="navbar-brand" th:href="@{/sites}"> Site Monitor</a>
+	  </div>
+	  <div class="ms-auto">
+		<a href="https://github.com/paulhornenterprises/sitemonitor2"
+		   target="_blank"
+		   rel="noopener noreferrer"
+		   class="btn btn-outline-light"
+		   style="--bs-btn-font-size: .80rem;"
+		   title="Open H2 Database Console">
+		    <i class="bi bi-question-circle"></i>
+		</a>		
+	  </div>
+	  <div class="ms-auto">
+		<a th:href="@{/h2-console}"
+		   target="_blank"
+		   rel="noopener noreferrer"
+		   class="btn btn-outline-info me-3"
+		   style="--bs-btn-font-size: .80rem;"
+		   title="Open H2 Database Console">
+		    <i class="bi bi-database-fill"></i>H2
+		</a>
+	  </div>
+	</nav>	
+	
+</body>
 
 </html>
