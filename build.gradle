@@ -50,7 +50,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-h2console'
 	runtimeOnly 'com.h2database:h2'
 	
-	implementation 'joda-time:joda-time:2.14.3'
+	implementation 'org.apache.httpcomponents.client5:httpclient5'
 	
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }

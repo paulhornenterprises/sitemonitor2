@@ -1,14 +1,33 @@
 package sitemonitor2.config;
 
-import java.net.http.HttpClient;
-import java.time.Duration;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.cookie.BasicCookieStore;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.client.RestClient;
 
@@ -48,6 +67,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Configuration
 public class SiteMonitorConfiguration {
+	
+	private static final String USER_AGENT = "SiteMonitor2/1.0";
+	private static final String ACCEPT_HEADER = "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.9,*/*;q=0.8";
 
     /**
      * Creates the shared HTTP client used by the site monitoring service.
@@ -90,20 +112,78 @@ public class SiteMonitorConfiguration {
      */	
 	@Bean
 	public RestClient siteMonitorRestClient(
-
 			@Value("${site-monitor.connect-timeout-seconds:5}") long connectTimeoutSeconds,
+			@Value("${site-monitor.read-timeout-seconds:15}") long readTimeoutSeconds,
+			@Value("${site-monitor.ignore-ssl-errors:false}") boolean ignoreSslErrors,
+			@Value("${site-monitor.max-connections:100}") int maxConnections,
+			@Value("${site-monitor.max-connections-per-route:25}") int maxConnectionsPerRoute) {
 
-			@Value("${site-monitor.read-timeout-seconds:15}") long readTimeoutSeconds) {
+		RequestConfig requestConfig =
+		        RequestConfig.custom()
+		                .build();
+		
+		Header userAgentHeader = new BasicHeader("User-Agent", USER_AGENT);
+		Header acceptHeader = new BasicHeader("Accept", ACCEPT_HEADER);
+		
+		CloseableHttpClient client =
+		        HttpClients.custom()
+		                .setConnectionManager(buildConnectionManager(
+		                		ignoreSslErrors, 
+		                		connectTimeoutSeconds, 
+		                		readTimeoutSeconds,
+		                		maxConnections,
+		                		maxConnectionsPerRoute))
+		                .setDefaultRequestConfig(requestConfig)
+		                .setDefaultCookieStore(new BasicCookieStore())
+		                .setDefaultHeaders(
+		                		List.of(
+		                                userAgentHeader,
+		                                acceptHeader))
+		                .build();
+		
+		HttpComponentsClientHttpRequestFactory httpClientFactory = new HttpComponentsClientHttpRequestFactory();
+		httpClientFactory.setHttpClient(client);		
+		
+		return RestClient.builder()
+					.requestFactory(httpClientFactory)
+					.build();
+	}
+	
+	private PoolingHttpClientConnectionManager buildConnectionManager(
+	        boolean ignoreSslErrors,
+	        long connectTimeoutSeconds,
+	        long readTimeoutSeconds,
+	        int maxConnections,
+	        int maxConnectionsPerRoute) {
 
-		HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(connectTimeoutSeconds))
-				.followRedirects(HttpClient.Redirect.NORMAL).build();
+	    ConnectionConfig connectionConfig =
+	            ConnectionConfig.custom()
+	                    .setConnectTimeout(
+	                            Timeout.ofSeconds(connectTimeoutSeconds))
+	                    .setSocketTimeout(
+	                            Timeout.ofSeconds(readTimeoutSeconds))
+	                    .setTimeToLive(
+	                            TimeValue.ofMinutes(5))
+	                    .build();
 
-		JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+	    PoolingHttpClientConnectionManagerBuilder builder =
+	            PoolingHttpClientConnectionManagerBuilder
+	                    .create()
+	                    .setMaxConnTotal(maxConnections)
+	                    .setMaxConnPerRoute(maxConnectionsPerRoute)
+	                    .setDefaultConnectionConfig(connectionConfig);
 
-		requestFactory.setReadTimeout(Duration.ofSeconds(readTimeoutSeconds));
+	    if (ignoreSslErrors) {
+    	    log.warn("SSL certificate validation is DISABLED for the monitoring client.");
+	        TlsSocketStrategy tlsStrategy =
+	                new DefaultClientTlsStrategy(
+	                        createTrustAllSslContext(),
+	                        NoopHostnameVerifier.INSTANCE);
 
-		return RestClient.builder().requestFactory(requestFactory).defaultHeader("User-Agent", "SiteMonitor2/1.0")
-				.build();
+	        builder.setTlsSocketStrategy(tlsStrategy);
+	    }
+
+	    return builder.build();
 	}
 
     /**
@@ -179,4 +259,52 @@ public class SiteMonitorConfiguration {
 
 		return executor;
 	}
+	
+	private SSLContext createTrustAllSslContext() {
+
+	    try {
+
+	        TrustManager[] trustManagers =
+	                new TrustManager[] {
+
+	                        new X509TrustManager() {
+
+	                            @Override
+	                            public void checkClientTrusted(
+	                                    X509Certificate[] chain,
+	                                    String authType) {
+	                            }
+
+	                            @Override
+	                            public void checkServerTrusted(
+	                                    X509Certificate[] chain,
+	                                    String authType) {
+	                            }
+
+	                            @Override
+	                            public X509Certificate[]
+	                                    getAcceptedIssuers() {
+
+	                                return new X509Certificate[0];
+	                            }
+	                        }
+	                };
+
+	        SSLContext sslContext =
+	                SSLContext.getInstance("TLS");
+
+	        sslContext.init(
+	                null,
+	                trustManagers,
+	                new SecureRandom());
+
+	        return sslContext;
+
+	    } catch (Exception exception) {
+
+	        throw new RuntimeException(
+	                "Unable to create trust-all SSL context",
+	                exception);
+	    }
+	}	
 }

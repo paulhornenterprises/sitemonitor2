@@ -305,34 +305,42 @@ public class SiteMonitorService {
 		Instant requestStarted = Instant.now();
 
 		try {
-			return siteMonitorRestClient.get().uri(site.getUrl()).exchange((request, response) -> {
-
+			log.info("Checking site={} url={}",
+				    site.getName(),
+				    site.getUrl());
+			
+			return siteMonitorRestClient
+					.get()
+					.uri(site.getUrl())
+					.exchange((request, response) -> {
+				
 				LocalDateTime eventTime = LocalDateTime.now();
-
 				long responseTime = Duration.between(requestStarted, Instant.now()).toMillis();
-
+				
 				HttpStatusCode httpStatus = response.getStatusCode();
-
 				HttpHeaders responseHeaders = response.getHeaders();
-
 				String responseBody = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-
+				
 				boolean successfulHttpStatus = httpStatus.is2xxSuccessful();
-
 				boolean assertTextFound = responseContainsAssertText(responseBody, site.getAssertText());
-
 				String currentStatus = successfulHttpStatus && assertTextFound ? STATUS_OK : STATUS_FAIL;
-
 				long failures = calculateFailureCount(site, currentStatus);
 
-				String eventDescription = createEventDescription(httpStatus, responseHeaders, assertTextFound,
+				String eventDescription = createEventDescription(
+						httpStatus, 
+						responseHeaders, 
+						assertTextFound,
 						site.getAssertText());
 
 				String eventChange = determineEventChange(previousStatus, currentStatus);
 
-				log.info(
-						"Site check completed: id={}, name={}, status={}, responseTime={} ms, eventChange={}",
-						site.getId(), site.getName(), currentStatus, responseTime, eventChange);
+				log.info("Site check completed: id={}, name={}, httpStatus={}, status={}, responseTime={} ms, eventChange={}",
+						 site.getId(), 
+						 site.getName(), 
+						 httpStatus, 
+						 currentStatus, 
+						 responseTime, 
+						 eventChange);
 
 				return new SiteCheckResult(site.getId(), currentStatus, responseTime, failures, eventDescription,
 						eventTime, eventChange);
