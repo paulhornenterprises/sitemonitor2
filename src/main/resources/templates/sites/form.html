@@ -1,154 +1,83 @@
-<!DOCTYPE html>
+<!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Site Monitor - Site</title>
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-        rel="stylesheet">
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-        rel="stylesheet">
-<style>
-body {
-    background-color: #f4f6f9;
-}
-
-.navbar-brand {
-    font-weight: 600;
-}
-
-.dashboard-card {
-    box-shadow: 0 4px 12px rgba(0,0,0,.08);
-    border: none;
-    border-radius: 12px;
-}
-
-.table-card {
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.page-header {
-    color: #0d6efd;
-    font-weight: 600;
-}
-
-.status-active {
-    background-color: #198754;
-}
-
-.status-inactive {
-    background-color: #dc3545;
-}
-
-.badge {
-    font-size: .85rem;
-}
-</style>        
-</head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-    <div class="container">
-        <a class="navbar-brand" href="/sites">
-            Site Monitor
-        </a>
-    </div>
-</nav>
-<div class="container mt-4">
-
-    <div class="row justify-content-center">
-
+  <head th:replace="~{fragments/head :: commonHead('Site Maintenance', ~{})}">
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+      <div class="container">
+        <a class="navbar-brand" href="/sites"> Site Monitor </a>
+      </div>
+    </nav>
+    <div class="container mt-4">
+      <div class="row justify-content-center">
         <div class="col-lg-8">
+          <div class="card dashboard-card">
+            <div class="card-header bg-white">
+              <h3 class="page-header mb-0">Site Maintenance</h3>
+            </div>
 
-            <div class="card dashboard-card">
+            <div class="card-body">
+              <form th:object="${site}" th:action="@{/sites}" method="post">
+                <input type="hidden" th:field="*{id}" />
+                <input type="hidden" th:field="*{failures}" />
+                <input type="hidden" th:field="*{lastNotification}" />
+                <input type="hidden" th:field="*{lastChecked}" />
+                <input type="hidden" th:field="*{eventTime}" />
+                <input type="hidden" th:field="*{eventDescription}" />
+                <input type="hidden" th:field="*{eventChange}" />
 
-                <div class="card-header bg-white">
-                    <h3 class="page-header mb-0">
-                        Site Maintenance
-                    </h3>
+                <div class="mb-3">
+                  <label for="status" class="form-label">Current Status</label>
+                  <input id="status"
+                    type="text"
+                    class="form-control"
+                    th:value="${site.status}"
+                    readonly />
+                  <div class="form-text">Updated automatically by the monitoring service.</div>
                 </div>
 
-                <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">Name</label>
+                  <input type="text" class="form-control" th:field="*{name}" />
+                </div>
 
-				    <form th:object="${site}"
-				          th:action="@{/sites}"
-				          method="post">
-				
-				        <input type="hidden" th:field="*{id}" />
-						<input type="hidden" th:field="*{status}" />
-						<input type="hidden" th:field="*{failures}" />
-						<input type="hidden" th:field="*{lastNotification}" />
-						<input type="hidden" th:field="*{lastChecked}" />
-				
-				        <div class="mb-3">
-				            <label class="form-label">Name</label>
-				            <input type="text"
-				                   class="form-control"
-				                   th:field="*{name}">
-				        </div>
-				
-				        <div class="mb-3">
-				            <label class="form-label">URL</label>
-				            <input type="url"
-				                   class="form-control"
-				                   th:field="*{url}">
-				        </div>
+                <div class="mb-3">
+                  <label class="form-label">URL</label>
+                  <input type="url" class="form-control" th:field="*{url}" />
+                </div>
 
-				        <div class="form-check mb-3">
-				            <input class="form-check-input"
-				                   type="checkbox"
-				                   th:field="*{enabled}">
-				            <label class="form-check-label">
-				                Enabled
-				            </label>
-				        </div>
-				
-				        <div class="mb-3">
-				            <label class="form-label">Failure Limit</label>
-				            <input type="number"
-				                   class="form-control"
-				                   th:field="*{failureLimit}">
-				        </div>
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" th:field="*{enabled}" />
+                  <label class="form-check-label"> Enabled </label>
+                </div>
 
-				        <div class="mb-3">
-				            <label class="form-label">Assert Text</label>
-				            <input type="text"
-				                   class="form-control"
-				                   th:field="*{assertText}">
-				        </div>
-				        
-				        <div class="mb-3">
-				            <label class="form-label">Notify (comma separated)</label>
-				            <input type="text"
-				                   class="form-control"
-				                   th:field="*{notify}">
-				        </div>				        
-				
-						<div class="mt-4">
-						
-						    <button type="submit"
-						            class="btn btn-primary">
-						        Save Changes
-						    </button>
-						
-						    <a th:href="@{/sites}"
-						       class="btn btn-outline-secondary">
-						        Cancel
-						    </a>
-						
-						</div>
-				
-				    </form>
-				</div>				      	
-			</div>    
-		</div>
-	</div>
-</div>
+                <div class="mb-3">
+                  <label class="form-label">Failure Limit</label>
+                  <input type="number" class="form-control" th:field="*{failureLimit}" />
+                </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.jsscript"></script>
-</body>
+                <div class="mb-3">
+                  <label class="form-label">Assert Text</label>
+                  <input type="text" class="form-control" th:field="*{assertText}" />
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Notify (comma separated)</label>
+                  <input type="text" class="form-control" th:field="*{notify}" />
+                </div>
+
+                <div class="mt-4">
+                  <button type="submit" class="btn btn-primary">Save Changes</button>
+
+                  <a th:href="@{/sites}" class="btn btn-outline-secondary"> Cancel </a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>

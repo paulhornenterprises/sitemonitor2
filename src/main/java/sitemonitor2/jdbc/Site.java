@@ -1,9 +1,9 @@
 package sitemonitor2.jdbc;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -22,21 +22,28 @@ public class Site {
     private String name;
     private String url;
     private String status;
-	@Column("RESPONSE_TIME")
     private long responseTime;
     private boolean enabled;
-	@Column("ASSERT_TEXT")
     private String assertText;
 	private long failures;
-	@Column("FAILURE_LIMIT")
 	private long failureLimit;
 	private String notify;
-	@Column("LAST_NOTIFICATION")
 	private String lastNotification;
-	@Column("LAST_CHECKED")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime lastChecked;
-    
-    
-    
+
+    //Change Event Collection
+	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+	private LocalDateTime eventTime;
+	private String eventDescription;
+	// YES when status changes, otherwise NO
+	private String eventChange;
+
+	public String getLastCheckedDisplay() {
+		return lastChecked.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+	}
+	
+	public String getEventTimeDisplay() {
+		return eventTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+	}	
 }

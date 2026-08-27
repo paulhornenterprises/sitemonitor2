@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.1'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'eclipse'
 }
 
 group = 'sitemonitor2'
@@ -41,6 +42,8 @@ dependencies {
 	
 	implementation 'org.springframework.boot:spring-boot-h2console'
 	runtimeOnly 'com.h2database:h2'
+	
+	implementation 'joda-time:joda-time:2.14.3'
 	
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
