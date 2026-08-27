@@ -18,6 +18,12 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['-parameters']
 }
 
+tasks.named('test') {
+    useJUnitPlatform()
+    systemProperty('spring.mail.host', 'smtp.somehost.com')
+    systemProperty('spring.mail.from', 'sitemonitor@test.net')
+}
+
 repositories {
 	mavenCentral()
 }
