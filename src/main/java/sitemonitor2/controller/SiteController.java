@@ -31,7 +31,9 @@ public class SiteController {
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        model.addAttribute("site", new Site());
+    	Site site = new Site();
+    	site.setFailureLimit(3);
+        model.addAttribute("site", site);
         return "sites/form";
     }
 

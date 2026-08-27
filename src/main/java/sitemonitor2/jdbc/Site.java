@@ -40,10 +40,16 @@ public class Site {
 	private String eventChange;
 
 	public String getLastCheckedDisplay() {
+		if (lastChecked == null) {
+			return "";
+		}
 		return lastChecked.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 	}
 	
 	public String getEventTimeDisplay() {
+		if (eventTime == null) {
+			return "";
+		}
 		return eventTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 	}	
 }
