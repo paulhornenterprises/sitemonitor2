@@ -1,5 +1,5 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="light">
   <head th:replace="~{fragments/head :: commonHead('Monitor Dashboard', ~{::pageCss})}">
   <th:block th:fragment="pageCss">
     <style>
@@ -12,7 +12,24 @@
 			color: white;
 			border-radius: 12px;
 			padding: 20px;
-		}        
+		}
+		.sortable {
+		    cursor: pointer;
+		    user-select: none;
+		}
+
+		.sortable:hover {
+		    color: var(--bs-primary);
+		}
+
+		.sortable.asc::after {
+		    content: " ▲";
+		}
+
+		.sortable.desc::after {
+		    content: " ▼";
+		}
+
     </style>
   </th:block>  
   </head>
@@ -36,18 +53,27 @@
         </div>
 
         <div class="card-body">
-          <table class="table table-hover align-middle">
+			
+          <div class="row mb-3">
+          	<div class="col-md-4">
+          		<input id="siteSearch" class="form-control" type="text" placeholder="Search sites...">
+          	</div>
+          </div>
+			
+          <table 
+		  		id="siteTable" 
+				class="table table-hover align-middle">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Enabled</th>
-                <th>Msec.</th>
-                <th>Failures</th>
-                <th>Assert</th>
-				<th>Checked</th>
-                <th>Notify</th>
+                <th class="sortable" data-column="0">ID</thclass="sortable">
+                <th class="sortable" data-column="1">Name</th>
+                <th class="sortable" data-column="2">Status</th>
+                <th class="sortable" data-column="3">Enabled</th>
+                <th class="sortable" data-column="4">Msec.</th>
+                <th class="sortable" data-column="5">Failures</th>
+                <th class="sortable" data-column="6">Assert</th>
+				<th class="sortable" data-column="7">Checked</th>
+                <th class="sortable" data-column="8">Notify</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -75,11 +101,13 @@
 					[[${site.failures}]] / [[${site.failureLimit}]]
 				</td>
                 <td th:text="${site.assertText}"></td>
-				<td>
-					<span class="badge bg-info"
-					      data-bs-toggle="tooltip" th:data-bs-title="${site.eventDescription}"
-						  >[[${site.eventTimeDisplay}]]</span>
-				</td>
+				<td th:data-order="${site.eventTime}">
+				    <span class="badge bg-secondary"
+				          data-bs-toggle="tooltip"
+				          th:data-bs-title="${site.eventDescription}">
+				        [[${site.eventTimeDisplay}]]
+				    </span>
+				</td>				
                 <td>
 					<span class="badge bg-success"
 					      data-bs-toggle="tooltip"
@@ -116,5 +144,48 @@
 		const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
 		const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))	
 	</script>
+	<script>
+		document.addEventListener("DOMContentLoaded", () => {
+		  const table = document.getElementById("siteTable");
+		  const tbody = table.querySelector("tbody");
+		  const search = document.getElementById("siteSearch");
+
+		  search.addEventListener("input", function () {
+		    const term = this.value.toLowerCase();
+		    tbody.querySelectorAll("tr").forEach((row) => {
+		      const text = row.innerText.toLowerCase();
+		      row.style.display = text.includes(term) ? "" : "none";
+		    });
+		  });
+
+		  document.querySelectorAll(".sortable").forEach((header) => {
+		    header.addEventListener("click", () => {
+		      const column = parseInt(header.dataset.column);
+		      const ascending = !header.classList.contains("asc");
+		      sortTable(column, ascending);
+		      document.querySelectorAll(".sortable").forEach((th) => {
+		        th.classList.remove("asc", "desc");
+		      });
+		      header.classList.add(ascending ? "asc" : "desc");
+		    });
+		  });
+
+		  function sortTable(column, ascending) {
+		    const rows = Array.from(tbody.querySelectorAll("tr"));
+		    rows.sort((a, b) => {
+			  const aText = a.cells[column].dataset.order || a.cells[column].innerText.trim();
+			  const bText = b.cells[column].dataset.order || b.cells[column].innerText.trim();			  
+		      const aNum = Number(aText);
+		      const bNum = Number(bText);
+		      if (!isNaN(aNum) && !isNaN(bNum)) {
+		        return ascending ? aNum - bNum : bNum - aNum;
+		      }
+		      return ascending ? aText.localeCompare(bText) : bText.localeCompare(aText);
+		    });
+		    rows.forEach((row) => tbody.appendChild(row));
+		  }
+		});
+	</script>	
+	
   </body>
 </html>

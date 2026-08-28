@@ -12,11 +12,13 @@
 	<link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet" />
-
+		
     <style>
-        body {
-            background-color: #f4f6f9;
-        }
+		body {
+		    transition:
+		        background-color .2s ease,
+		        color .2s ease;
+		}		
 
         .navbar-brand {
             font-weight: 600;
@@ -54,31 +56,112 @@
 		}
     </style>
 	<th:block th:replace="${additionalCss}" />
+	<script>
+	function setTheme(theme) {
+
+	    localStorage.setItem(
+	        'siteMonitorTheme',
+	        theme);
+
+	    applyTheme();
+	}
+
+	function applyTheme() {
+
+	    const stored =
+	        localStorage.getItem(
+	            'siteMonitorTheme') || 'auto';
+
+	    let theme = stored;
+
+	    if (stored === 'auto') {
+
+	        theme =
+	            window.matchMedia(
+	                '(prefers-color-scheme: dark)')
+	            .matches
+	                ? 'dark'
+	                : 'light';
+	    }
+
+	    document.documentElement
+	        .setAttribute(
+	            'data-bs-theme',
+	            theme);
+	}
+
+	applyTheme();
+
+	window.matchMedia(
+	    '(prefers-color-scheme: dark)')
+	    .addEventListener(
+	        'change',
+	        applyTheme);
+
+	</script>
 </head>
 <body>
-	<nav th:fragment="commonNav" class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+	<nav th:fragment="commonNav" class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm border-bottom border-secondary">
 	  <div class="container">
 	    <a class="navbar-brand" th:href="@{/sites}"> Site Monitor</a>
 	  </div>
-	  <div class="ms-auto">
-		<a href="https://github.com/paulhornenterprises/sitemonitor2"
-		   target="_blank"
-		   rel="noopener noreferrer"
-		   class="btn btn-outline-light"
-		   style="--bs-btn-font-size: .80rem;"
-		   title="Github Project">
-		    <i class="bi bi-question-circle"></i>
-		</a>		
-	  </div>
-	  <div class="ms-auto">
-		<a th:href="@{/h2-console}"
-		   target="_blank"
-		   rel="noopener noreferrer"
-		   class="btn btn-outline-info me-3"
-		   style="--bs-btn-font-size: .80rem;"
-		   title="Open H2 Database Console">
-		    <i class="bi bi-database-fill"></i>H2
-		</a>
+	  <div class="ms-auto d-flex align-items-center gap-2 me-3">
+
+	      <!-- Theme Selector -->
+	      <div class="dropdown">
+	          <button class="btn btn-secondary dropdown-toggle"
+	                  type="button"
+	                  data-bs-toggle="dropdown"
+	                  style="--bs-btn-font-size: .70rem;"
+	                  title="Theme">
+	              <i class="bi bi-circle-half"></i>
+	          </button>
+	          <ul class="dropdown-menu dropdown-menu-end">
+	              <li>
+	                  <button class="dropdown-item"
+	                          onclick="setTheme('light')">
+	                      <i class="bi bi-sun-fill"></i>
+	                      Light
+	                  </button>
+	              </li>
+
+	              <li>
+	                  <button class="dropdown-item"
+	                          onclick="setTheme('dark')">
+	                      <i class="bi bi-moon-stars-fill"></i>
+	                      Dark
+	                  </button>
+	              </li>
+	              <li>
+	                  <button class="dropdown-item"
+	                          onclick="setTheme('auto')">
+	                      <i class="bi bi-circle-half"></i>
+	                      System
+	                  </button>
+	              </li>
+	          </ul>
+	      </div>
+
+	      <!-- GitHub -->
+	      <a href="https://github.com/paulhornenterprises/sitemonitor2"
+	         target="_blank"
+	         rel="noopener noreferrer"
+	         class="btn btn-light"
+	         style="--bs-btn-font-size: .70rem;"
+	         title="GitHub Project">
+	          <i class="bi bi-github"></i>
+	      </a>
+
+	      <!-- H2 Console -->
+	      <a th:href="@{/h2-console}"
+	         target="_blank"
+	         rel="noopener noreferrer"
+	         class="btn btn-info"
+	         style="--bs-btn-font-size: .70rem;"
+	         title="Open H2 Database Console">
+	          <i class="bi bi-database-fill"></i>
+	      </a>
+
 	  </div>
 	</nav>	
 	
