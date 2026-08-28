@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title th:text="${applicationName} + ' Status Change'">
+        SiteMonitor2 Status Change
+    </title>
+</head>
+
+<body style="
+        margin: 0;
+        padding: 0;
+        background-color: #f4f6f9;
+        color: #212529;
+        font-family: Arial, Helvetica, sans-serif;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;">
+
+    <!-- Preheader text displayed by many clients beside the subject. -->
+    <div style="
+            display: none;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            color: transparent;
+            line-height: 1px;
+            font-size: 1px;"
+         th:text="${siteName} + ' changed to ' + ${status}">
+        Site monitoring status changed.
+    </div>
+
+    <table role="presentation"
+           width="100%"
+           cellspacing="0"
+           cellpadding="0"
+           border="0"
+           style="
+                width: 100%;
+                border-collapse: collapse;
+                background-color: #f4f6f9;">
+
+        <tr>
+            <td align="center"
+                style="padding: 24px 12px;">
+
+                <table role="presentation"
+                       width="600"
+                       cellspacing="0"
+                       cellpadding="0"
+                       border="0"
+                       style="
+                            width: 100%;
+                            max-width: 600px;
+                            border-collapse: separate;
+                            background-color: #ffffff;
+                            border: 1px solid #dee2e6;
+                            border-radius: 10px;">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="
+                                padding: 22px 28px;
+                                background-color: #212529;
+                                border-radius: 10px 10px 0 0;
+                                color: #ffffff;">
+
+                            <div style="
+                                    font-size: 22px;
+                                    line-height: 28px;
+                                    font-weight: bold;"
+                                 th:text="${applicationName}">
+                                SiteMonitor2
+                            </div>
+
+                            <div style="
+                                    margin-top: 4px;
+                                    color: #ced4da;
+                                    font-size: 14px;
+                                    line-height: 20px;">
+                                Site status notification
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Status banner -->
+                    <tr>
+                        <td th:style="${healthy}
+                                ? 'padding: 18px 28px; background-color: #d1e7dd; border-bottom: 1px solid #badbcc; color: #0f5132;'
+                                : 'padding: 18px 28px; background-color: #f8d7da; border-bottom: 1px solid #f5c2c7; color: #842029;'">
+
+                            <table role="presentation"
+                                   width="100%"
+                                   cellspacing="0"
+                                   cellpadding="0"
+                                   border="0"
+                                   style="
+                                       width: 100%;
+                                       border-collapse: collapse;">
+
+                                <tr>
+                                    <td style="
+                                            font-size: 20px;
+                                            line-height: 26px;
+                                            font-weight: bold;">
+
+                                        <span th:text="${healthy}
+                                                ? 'Site Recovered'
+                                                : 'Site Check Failed'">
+                                            Site status changed
+                                        </span>
+                                    </td>
+
+                                    <td align="right"
+                                        style="
+                                            font-size: 16px;
+                                            line-height: 24px;
+                                            font-weight: bold;"
+                                        th:text="${status}">
+                                        STATUS
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Main content -->
+                    <tr>
+                        <td style="padding: 26px 28px 8px 28px;">
+
+                            <div style="
+                                    margin: 0 0 18px 0;
+                                    font-size: 18px;
+                                    line-height: 25px;
+                                    font-weight: bold;"
+                                 th:text="${siteName}">
+                                Site name
+                            </div>
+
+                            <table role="presentation"
+                                   width="100%"
+                                   cellspacing="0"
+                                   cellpadding="0"
+                                   border="0"
+                                   style="
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        font-size: 14px;
+                                        line-height: 20px;">
+
+                                <tr>
+                                    <td width="38%"
+                                        valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;
+                                            color: #6c757d;
+                                            font-weight: bold;">
+                                        URL
+                                    </td>
+
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;
+                                            overflow-wrap: anywhere;">
+
+                                        <a th:href="${siteUrl}"
+                                           th:text="${siteUrl}"
+                                           style="
+                                               color: #0d6efd;
+                                               text-decoration: underline;">
+                                            Site URL
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;
+                                            color: #6c757d;
+                                            font-weight: bold;">
+                                        Event time
+                                    </td>
+
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;"
+                                        th:text="${eventTime}">
+                                        Event time
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;
+                                            color: #6c757d;
+                                            font-weight: bold;">
+                                        Response time
+                                    </td>
+
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;">
+
+                                        <span th:text="${responseTime}">
+                                            0
+                                        </span>
+                                        ms
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;
+                                            color: #6c757d;
+                                            font-weight: bold;">
+                                        Consecutive failures
+                                    </td>
+
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;"
+                                        th:text="${failures}">
+                                        0
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;
+                                            color: #6c757d;
+                                            font-weight: bold;">
+                                        State changed
+                                    </td>
+
+                                    <td valign="top"
+                                        style="
+                                            padding: 9px 12px;
+                                            border-top: 1px solid #e9ecef;"
+                                        th:text="${eventChange}">
+                                        YES
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Event details -->
+                    <tr>
+                        <td style="padding: 18px 28px 28px 28px;">
+
+                            <div style="
+                                    margin-bottom: 8px;
+                                    color: #495057;
+                                    font-size: 14px;
+                                    line-height: 20px;
+                                    font-weight: bold;">
+                                Event details
+                            </div>
+
+                            <div style="
+                                    padding: 14px;
+                                    background-color: #f8f9fa;
+                                    border: 1px solid #dee2e6;
+                                    border-radius: 6px;
+                                    color: #343a40;
+                                    font-family: Consolas, 'Courier New', monospace;
+                                    font-size: 12px;
+                                    line-height: 18px;
+                                    overflow-wrap: anywhere;
+                                    white-space: pre-wrap;"
+                                 th:text="${eventDescription}">
+                                Event description
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="
+                                padding: 17px 28px;
+                                background-color: #f8f9fa;
+                                border-top: 1px solid #dee2e6;
+                                border-radius: 0 0 10px 10px;
+                                color: #6c757d;
+                                font-size: 12px;
+                                line-height: 18px;
+                                text-align: center;">
+
+                            This is an automated monitoring notification from
+                            <span th:text="${applicationName}">
+                                SiteMonitor2
+                            </span>.
+                        </td>
+                    </tr>
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

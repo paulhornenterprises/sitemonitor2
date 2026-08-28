@@ -165,11 +165,11 @@ public class SiteMonitorService {
 			log.info("Starting monitoring cycle for {} enabled sites", sites.size());
 
 			List<CompletableFuture<SiteCheckResult>> futures = submitSiteChecks(sites);
-
+			
 			CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
-
+			
 			List<SiteCheckResult> results = collectResults(futures);
-
+			
 			applyAndSaveResults(sites, results);
 
 			long cycleDuration = Duration.between(cycleStarted, Instant.now()).toMillis();
