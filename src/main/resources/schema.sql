@@ -16,8 +16,15 @@ CREATE TABLE IF NOT EXISTS site (
     -- Change Event collection
     event_time TIMESTAMP,
     event_description VARCHAR(1000),
-    event_change VARCHAR(30) DEFAULT 'NO'
+    event_change VARCHAR(30) DEFAULT 'NO',
+    failure_alert_sent BOOLEAN DEFAULT FALSE
 );
 
--- INSERT INTO site (name,url,status,assert_text,notify) VALUES ('Site Monitor 2 (localhost)','http://localhost:8012/sm2/actuator/health','OK','UP','alerts@test.net');
--- COMMIT;
+/*
+ALTER TABLE site
+ADD COLUMN IF NOT EXISTS failure_alert_sent BOOLEAN DEFAULT FALSE NOT NULL;
+
+UPDATE site
+SET failure_alert_sent = FALSE
+WHERE failure_alert_sent IS NULL;
+*/

@@ -31,6 +31,7 @@ public class Site {
 	private String lastNotification;
 	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime lastChecked;
+	private boolean failureAlertSent;
 
     //Change Event Collection
 	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
