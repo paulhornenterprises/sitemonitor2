@@ -573,7 +573,7 @@ public class SiteMonitorService {
 
 			applyResult(site, result);
 			
-			if (EVENT_CHANGE_YES.equals(result.eventChange())) {
+			if (shouldSendNotification(site, result)) {
 				emailNotificationService.sendStatusChangeNotification(site, result);
 			}
 			
@@ -581,6 +581,68 @@ public class SiteMonitorService {
 		}
 
 		siteRepository.saveAll(updatedSites);
+	}
+	
+	/**
+	 * Determines whether a status change notification should be sent.
+	 *
+	 * <p>
+	 * Recovery notifications are always sent immediately.
+	 * Failure notifications are delayed until the configured
+	 * failure threshold is reached.
+	 * </p>
+	 *
+	 * <p>
+	 * Examples:
+	 * </p>
+	 *
+	 * <ul>
+	 *   <li>
+	 *     OK → FAIL
+	 *     with failureLimit=3
+	 *     and failures=1
+	 *     = do not notify
+	 *   </li>
+	 *
+	 *   <li>
+	 *     OK → FAIL (multiple times)
+	 *     with failureLimit=3
+	 *     and failures=3
+	 *     = notify
+	 *   </li>
+	 *
+	 *   <li>
+	 *     FAIL → OK
+	 *     = always notify
+	 *   </li>
+	 * </ul>
+	 *
+	 * @param site
+	 *     Site configuration.
+	 *
+	 * @param result
+	 *     Monitoring result.
+	 *
+	 * @return
+	 *     True when an email should be sent.
+	 */
+	private boolean shouldSendNotification(Site site, SiteCheckResult result) {
+
+		/*
+		 * Recovery notifications
+		 */
+		if (STATUS_OK.equals(result.status()) && EVENT_CHANGE_YES.equals(result.eventChange())) {
+			return true;
+		}
+
+		/*
+		 * Failure threshold notifications
+		 */
+		if (STATUS_FAIL.equals(result.status()) && result.failures() == site.getFailureLimit()) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
