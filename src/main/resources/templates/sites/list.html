@@ -44,14 +44,36 @@
     
     <div class="container mt-4">
       <div class="card dashboard-card">
-        <div class="card-header bg-white">
-          <div class="d-flex justify-content-between align-items-center">
-            <h3 class="page-header mb-0"><i class="bi bi-globe"></i> Site Configuration</h3>
-
-            <a class="btn btn-success" th:href="@{/sites/new}"> + Add Site </a>
-          </div>
-        </div>
-
+		<div class="card-header bg-white">
+			<div class="d-flex align-items-center">
+				<h3 class="page-header mb-0">
+					<i class="bi bi-globe"></i>
+					Site Configuration
+				</h3>
+		
+				<div class="ms-auto d-flex align-items-center gap-2">
+					<a class="btn btn-success" th:href="@{/sites/new}">
+						<i class="bi bi-plus-circle"></i>
+						Add Site
+					</a>
+					<a class="btn btn-outline-success" th:href="@{/sites/export}">
+						<i class="bi bi-download"></i>
+						Export
+					</a>
+					<form th:action="@{/sites/import}" method="post" enctype="multipart/form-data"
+						class="d-flex align-items-center gap-2 mb-0">
+						<input type="file" name="file" class="form-control form-control-sm" style="width: 220px;"
+							accept=".json" required="required">
+						<button type="submit" class="btn btn-outline-primary text-nowrap">
+							<i class="bi bi-upload"></i>
+							Import
+						</button>
+					</form>
+				</div>
+				
+			</div>
+		</div>
+		
         <div class="card-body">
 			
           <div class="row mb-3">
