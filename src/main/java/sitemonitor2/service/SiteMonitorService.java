@@ -347,6 +347,7 @@ public class SiteMonitorService {
 			});
 
 		} catch (Exception exception) {
+			//log.error("Checking site " + site.getUrl() + " Exception.", exception);
 			return createFailureResult(site, previousStatus, requestStarted, exception);
 		}
 	}

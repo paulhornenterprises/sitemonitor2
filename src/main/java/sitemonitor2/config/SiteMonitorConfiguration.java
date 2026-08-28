@@ -17,7 +17,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
 import org.apache.hc.core5.http.Header;
@@ -141,7 +141,13 @@ public class SiteMonitorConfiguration {
 		                                acceptHeader))
 		                .build();
 		
+		log.info(
+			    "hostname verification disabled={}",
+			    ignoreSslErrors);
 		HttpComponentsClientHttpRequestFactory httpClientFactory = new HttpComponentsClientHttpRequestFactory();
+		log.info(
+			    "RestClient request factory={}",
+			    httpClientFactory.getClass().getName());
 		httpClientFactory.setHttpClient(client);		
 		
 		return RestClient.builder()
@@ -166,23 +172,27 @@ public class SiteMonitorConfiguration {
 	                            TimeValue.ofMinutes(5))
 	                    .build();
 
-	    PoolingHttpClientConnectionManagerBuilder builder =
+        PoolingHttpClientConnectionManagerBuilder builder =
 	            PoolingHttpClientConnectionManagerBuilder
 	                    .create()
 	                    .setMaxConnTotal(maxConnections)
 	                    .setMaxConnPerRoute(maxConnectionsPerRoute)
-	                    .setDefaultConnectionConfig(connectionConfig);
-
+	                    .setDefaultConnectionConfig(connectionConfig);	    
+	    
 	    if (ignoreSslErrors) {
     	    log.warn("SSL certificate validation is DISABLED for the monitoring client.");
-	        TlsSocketStrategy tlsStrategy =
-	                new DefaultClientTlsStrategy(
-	                        createTrustAllSslContext(),
-	                        NoopHostnameVerifier.INSTANCE);
 
+    	    TlsSocketStrategy tlsStrategy =
+    	            ClientTlsStrategyBuilder.create()
+    	                    .setSslContext(createTrustAllSslContext())
+    	                    .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+    	                    .buildClassic();
+    	    
 	        builder.setTlsSocketStrategy(tlsStrategy);
-	    }
 
+	    }
+	    
+	    
 	    return builder.build();
 	}
 

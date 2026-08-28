@@ -80,7 +80,13 @@
 					      data-bs-toggle="tooltip" th:data-bs-title="${site.eventDescription}"
 						  >[[${site.eventTimeDisplay}]]</span>
 				</td>
-                <td th:text="${site.notify}"></td>
+                <td>
+					<span class="badge bg-success"
+					      data-bs-toggle="tooltip"
+						  data-bs-custom-class="notify-tooltip" 
+						  th:data-bs-title="${site.notify}"
+						  ><i class="bi bi-envelope-at"></i></span>
+				</td>
                 <td>
                   <div class="d-flex gap-2">
                     <a th:href="@{/sites/{id}(id=${site.id})}" class="btn btn-sm btn-outline-primary">
