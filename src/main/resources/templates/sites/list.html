@@ -126,6 +126,7 @@
 				<td th:data-order="${site.eventTime}">
 				    <span class="badge bg-secondary"
 				          data-bs-toggle="tooltip"
+						  data-bs-custom-class="wide-tooltip"
 				          th:data-bs-title="${site.eventDescription}">
 				        [[${site.eventTimeDisplay}]]
 				    </span>
@@ -133,7 +134,7 @@
                 <td>
 					<span class="badge bg-success"
 					      data-bs-toggle="tooltip"
-						  data-bs-custom-class="notify-tooltip" 
+						  data-bs-custom-class="wide-tooltip" 
 						  th:data-bs-title="${site.notify}"
 						  ><i class="bi bi-envelope-at"></i></span>
 				</td>
