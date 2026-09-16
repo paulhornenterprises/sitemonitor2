@@ -199,6 +199,8 @@ public class EmailNotificationService {
 		context.setVariable("responseTime", result.responseTime());
 		context.setVariable("failures", result.failures());
 		context.setVariable("eventDescription", displayValue(result.eventDescription()));
+		context.setVariable("isRecovery", STATUS_OK.equalsIgnoreCase(result.status()));
+		context.setVariable("duration", result.duration());
 
 		return templateEngine.process(EMAIL_TEMPLATE, context);
     }

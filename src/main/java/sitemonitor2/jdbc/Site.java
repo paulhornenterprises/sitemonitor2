@@ -32,6 +32,8 @@ public class Site {
 	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime lastChecked;
 	private boolean failureAlertSent;
+	private LocalDateTime outageStartTime;
+	private long outageFailureCount;	
 
     //Change Event Collection
 	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -52,5 +54,16 @@ public class Site {
 			return "";
 		}
 		return eventTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+	}
+
+	public String getOutageStartTimeDisplay() {
+		if (outageStartTime == null) {
+			return "";
+		}
+		return outageStartTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+	}
+	
+	public boolean isOutageActive() {
+	    return outageStartTime != null;
 	}	
 }

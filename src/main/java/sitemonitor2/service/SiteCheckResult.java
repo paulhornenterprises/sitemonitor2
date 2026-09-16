@@ -84,5 +84,6 @@ public record SiteCheckResult(
         long failures,
         String eventDescription,
         LocalDateTime eventTime,
-        String eventChange) {
+        String eventChange,
+        long duration) {
 }

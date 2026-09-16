@@ -219,6 +219,28 @@
                                         ms
                                     </td>
                                 </tr>
+								
+								<tr th:if="${isRecovery}">
+								    <td valign="top"
+								        style="
+								            padding: 9px 12px;
+								            border-top: 1px solid #e9ecef;
+								            color: #6c757d;
+								            font-weight: bold;">
+								        Outage duration
+								    </td>
+
+								    <td valign="top"
+								        style="
+								            padding: 9px 12px;
+								            border-top: 1px solid #e9ecef;">
+
+								        <span th:text="${duration}">
+								            0
+								        </span>
+								        minutes
+								    </td>
+								</tr>								
 
                                 <tr>
                                     <td valign="top"
@@ -227,7 +249,8 @@
                                             border-top: 1px solid #e9ecef;
                                             color: #6c757d;
                                             font-weight: bold;">
-                                        Consecutive failures
+                                        <span th:if="${!isRecovery}">Consecutive failures</span>
+										<span th:if="${isRecovery}">Failed checks during outage</span>
                                     </td>
 
                                     <td valign="top"
@@ -238,25 +261,7 @@
                                         0
                                     </td>
                                 </tr>
-
-                                <tr>
-                                    <td valign="top"
-                                        style="
-                                            padding: 9px 12px;
-                                            border-top: 1px solid #e9ecef;
-                                            color: #6c757d;
-                                            font-weight: bold;">
-                                        State changed
-                                    </td>
-
-                                    <td valign="top"
-                                        style="
-                                            padding: 9px 12px;
-                                            border-top: 1px solid #e9ecef;"
-                                        th:text="${eventChange}">
-                                        YES
-                                    </td>
-                                </tr>
+																
                             </table>
                         </td>
                     </tr>

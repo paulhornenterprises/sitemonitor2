@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS site (
     event_time TIMESTAMP,
     event_description VARCHAR(1000),
     event_change VARCHAR(30) DEFAULT 'NO',
-    failure_alert_sent BOOLEAN DEFAULT FALSE
+    failure_alert_sent BOOLEAN DEFAULT FALSE,
+    outage_start_time TIMESTAMP,
+    outage_failure_count BIGINT DEFAULT 0 NOT NULL
 );
 
 /*
@@ -28,3 +30,9 @@ UPDATE site
 SET failure_alert_sent = FALSE
 WHERE failure_alert_sent IS NULL;
 */
+
+ALTER TABLE site
+ADD COLUMN IF NOT EXISTS outage_start_time TIMESTAMP;
+
+ALTER TABLE site
+ADD COLUMN IF NOT EXISTS outage_failure_count BIGINT DEFAULT 0 NOT NULL;

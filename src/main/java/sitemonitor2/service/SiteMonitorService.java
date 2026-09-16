@@ -342,8 +342,7 @@ public class SiteMonitorService {
 						 responseTime, 
 						 eventChange);
 
-				return new SiteCheckResult(site.getId(), currentStatus, responseTime, failures, eventDescription,
-						eventTime, eventChange);
+				return new SiteCheckResult(site.getId(), currentStatus, responseTime, failures, eventDescription, eventTime, eventChange, 0);
 			});
 
 		} catch (Exception exception) {
@@ -397,8 +396,7 @@ public class SiteMonitorService {
 		log.warn("Site check failed: id={}, name={}, url={}, reason={}", site.getId(), site.getName(), site.getUrl(),
 				exceptionMessage);
 
-		return new SiteCheckResult(site.getId(), STATUS_FAIL, responseTime, site.getFailures() + 1,
-				truncate(exceptionMessage), eventTime, eventChange);
+		return new SiteCheckResult(site.getId(), STATUS_FAIL, responseTime, site.getFailures() + 1, truncate(exceptionMessage), eventTime, eventChange, 0);
 	}
 
 	/**
@@ -570,8 +568,22 @@ public class SiteMonitorService {
 				log.warn("Site {} was not found while applying " + "its monitoring result", result.siteId());
 				continue;
 			}
-
+			
+			//Pull these before applying to use on recovery notifications.
+			String previousEventDescription = site.getEventDescription();
+			
+			if (EVENT_CHANGE_YES.equals(result.eventChange()) && STATUS_FAIL.equals(result.status())) {
+			    site.setOutageStartTime(result.eventTime());
+			    site.setOutageFailureCount(1);
+			}
+			
 			applyResult(site, result);
+			
+			if (STATUS_FAIL.equals(result.status())
+			        && !EVENT_CHANGE_YES.equals(result.eventChange())
+			        && site.getOutageStartTime() != null) {
+			    site.setOutageFailureCount(site.getOutageFailureCount() + 1);
+			}			
 
 			if (shouldSendFailureNotification(site, result)) {
 				emailNotificationService.sendStatusChangeNotification(site, result);
@@ -579,8 +591,32 @@ public class SiteMonitorService {
 			}
 
 			if (shouldSendRecoveryNotification(site, result)) {
-				emailNotificationService.sendStatusChangeNotification(site, result);
+				SiteCheckResult recoveryResult =
+				        new SiteCheckResult(
+				                result.siteId(),
+				                result.status(),
+				                result.responseTime(),
+				                site.getOutageFailureCount(),
+				                """
+				                Outage started: %s
+
+				                Outage duration: %s minutes
+
+				                Failed checks: %s
+
+				                Last failure: %s
+				                """.formatted(
+				                        site.getOutageStartTimeDisplay(),
+				                        Duration.between(site.getOutageStartTime(), result.eventTime()).toMinutes(),
+				                        site.getOutageFailureCount(),
+				                        previousEventDescription),
+				                result.eventTime(),
+				                result.eventChange(),
+				                Duration.between(site.getOutageStartTime(), result.eventTime()).toMinutes());
+				emailNotificationService.sendStatusChangeNotification(site, recoveryResult);
 				site.setFailureAlertSent(false);
+				site.setOutageStartTime(null);
+				site.setOutageFailureCount(0);
 			}
 			
 			updatedSites.add(site);
